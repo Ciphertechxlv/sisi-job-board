@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #14110d;
+  --ink-soft: #211c15;
+  --paper: #faf3e4;
+  --paper-dim: #f0e6d2;
+  --yellow: #ffc53d;
+  --coral: #ff4757;
+  --green: #16a672;
+  --violet: #7c5cfc;
+
+  --font-display: "Anton", sans-serif;
+  --font-body: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display {
+  font-family: var(--font-display), sans-serif;
+}
+
+.font-mono-ui {
+  font-family: var(--font-mono), ui-monospace, monospace;
+}
+
+/* Diagonal danfo-stripe accent, used sparingly */
+.stripe-edge {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--yellow),
+    var(--yellow) 10px,
+    var(--ink) 10px,
+    var(--ink) 20px
+  );
+}
+
+/* Marquee ticker */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee-track {
+  animation: marquee 26s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+::selection {
+  background: var(--yellow);
+  color: var(--ink);
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 3px solid var(--yellow);
+  outline-offset: 2px;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--ink);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--paper-dim);
+  border-radius: 999px;
+}
