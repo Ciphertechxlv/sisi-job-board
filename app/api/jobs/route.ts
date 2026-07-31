@@ -1,25 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
-import { DREAM_COMPANIES, ROLES, RoleKey } from "@/lib/companies";
-import { resolveCompany } from "@/lib/fetchers";
+import { ROLES, RoleKey } from "@/lib/companies";
+import { resolveDirectPulls, resolveRoleFeed } from "@/lib/fetchers";
+import { FeedResponse } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export async function GET(req: NextRequest) {
-  const roleKey = req.nextUrl.searchParams.get("role") as RoleKey | null;
-  const role = ROLES.find((r) => r.key === roleKey);
-  const roleKeywords = role ? role.keywords : [];
-  const roleQuery = role ? role.label : "";
+  const roleParam = req.nextUrl.searchParams.get("role") as RoleKey | null;
+  const role = ROLES.find((r) => r.key === roleParam) ?? null;
 
-  const results = await Promise.all(
-    DREAM_COMPANIES.map((company) =>
-      resolveCompany(company, roleKeywords, roleQuery)
-    )
-  );
+  const [feed, directPulls] = await Promise.all([
+    resolveRoleFeed(role?.key ?? null),
+    resolveDirectPulls(role?.key ?? null),
+  ]);
 
-  return NextResponse.json({
+  const body: FeedResponse = {
     role: role?.key ?? null,
     generatedAt: new Date().toISOString(),
-    results,
-  });
+    feedStatus: feed.status,
+    postings: feed.postings,
+    directPulls,
+  };
+
+  return NextResponse.json(body);
 }

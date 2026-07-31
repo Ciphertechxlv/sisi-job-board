@@ -12,8 +12,20 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const themeInit = `
+    (function () {
+      try {
+        var stored = localStorage.getItem("sisi-theme");
+        var theme = stored === "light" ? "light" : "dark";
+        document.documentElement.setAttribute("data-theme", theme);
+      } catch (e) {
+        document.documentElement.setAttribute("data-theme", "dark");
+      }
+    })();
+  `;
+
   return (
-    <html lang="en">
+    <html lang="en" data-theme="dark" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
@@ -25,6 +37,7 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
           rel="stylesheet"
         />
+        <script dangerouslySetInnerHTML={{ __html: themeInit }} />
       </head>
       <body className="antialiased">{children}</body>
     </html>

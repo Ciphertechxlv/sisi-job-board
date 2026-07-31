@@ -2,15 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { ROLES, RoleKey } from "@/lib/companies";
-import { CompanyResult } from "@/lib/types";
-import CompanyCard from "./CompanyCard";
-import GradTraineeStrip from "./GradTraineeStrip";
+import { DirectPullResult, Posting } from "@/lib/types";
+import JobCard from "./JobCard";
+import DirectPullSection from "./DirectPullSection";
+import ThemeToggle from "./ThemeToggle";
 
 const TICKER_WORDS = ROLES.map((r) => r.label.toUpperCase());
 
 export default function Board() {
   const [activeRole, setActiveRole] = useState<RoleKey | "all">("all");
-  const [results, setResults] = useState<CompanyResult[]>([]);
+  const [postings, setPostings] = useState<Posting[]>([]);
+  const [directPulls, setDirectPulls] = useState<DirectPullResult[]>([]);
+  const [feedStatus, setFeedStatus] = useState<"live" | "error">("live");
   const [loading, setLoading] = useState(true);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
 
@@ -19,18 +22,21 @@ export default function Board() {
     async function run() {
       setLoading(true);
       try {
-        // "all" fetches every company's unfiltered board; a specific role
-        // narrows each company's postings down to matches for that role.
         const url =
           activeRole === "all" ? "/api/jobs" : `/api/jobs?role=${activeRole}`;
         const res = await fetch(url, { cache: "no-store" });
         const data = await res.json();
         if (!cancelled) {
-          setResults(data.results);
+          setPostings(data.postings);
+          setDirectPulls(data.directPulls);
+          setFeedStatus(data.feedStatus);
           setGeneratedAt(data.generatedAt);
         }
       } catch {
-        if (!cancelled) setResults([]);
+        if (!cancelled) {
+          setPostings([]);
+          setFeedStatus("error");
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -47,15 +53,21 @@ export default function Board() {
       <header className="relative overflow-hidden border-b-4" style={{ borderColor: "var(--yellow)" }}>
         <div className="max-w-6xl mx-auto px-5 sm:px-8 pt-10 sm:pt-16 pb-8">
           <div className="flex items-center justify-between gap-4 mb-8 sm:mb-12">
-            <span className="font-mono-ui text-[11px] sm:text-xs tracking-[0.2em] opacity-70">
-              LAGOS, NIGERIA · EST. TODAY
-            </span>
             <span
-              className="font-mono-ui text-[11px] sm:text-xs tracking-[0.2em] px-3 py-1 rounded-full font-bold"
-              style={{ background: "var(--coral)", color: "var(--paper)" }}
+              className="font-mono-ui text-[11px] sm:text-xs tracking-[0.2em]"
+              style={{ color: "var(--text-faint)" }}
             >
-              VOL. 01
+              LAGOS, NIGERIA · LIVE
             </span>
+            <div className="flex items-center gap-3">
+              <span
+                className="font-mono-ui text-[11px] sm:text-xs tracking-[0.2em] px-3 py-1 rounded-full font-bold"
+                style={{ background: "var(--coral)", color: "#faf3e4" }}
+              >
+                VOL. 01
+              </span>
+              <ThemeToggle />
+            </div>
           </div>
 
           <p className="font-mono-ui text-xs sm:text-sm tracking-[0.3em] mb-3" style={{ color: "var(--yellow)" }}>
@@ -66,18 +78,19 @@ export default function Board() {
             <br />
             Board
           </h1>
-          <p className="mt-6 max-w-[52ch] text-base sm:text-lg opacity-80">
-            A live desk watching brand marketing, advertising, copywriting,
-            creative writing and digital marketing roles — pointed straight
-            at the dream list, and every graduate trainee programme landing
-            in Lagos.
+          <p className="mt-6 max-w-[56ch] text-base sm:text-lg" style={{ color: "var(--text-soft)" }}>
+            Real, open roles in brand marketing, advertising, creative
+            writing, copywriting, digital marketing and graduate trainee
+            programmes — pulled live from Lagos&rsquo;s biggest job board and
+            straight from the hiring systems of the agencies and brands in
+            Sisi&rsquo;s dream list.
           </p>
         </div>
 
         {/* marquee ticker */}
         <div
           className="relative py-3 border-t-2 overflow-hidden"
-          style={{ borderColor: "var(--yellow)", background: "var(--ink-soft)" }}
+          style={{ borderColor: "var(--yellow)", background: "var(--bg-soft)" }}
         >
           <div className="marquee-track flex whitespace-nowrap font-mono-ui text-sm font-bold tracking-widest">
             {[...TICKER_WORDS, ...TICKER_WORDS, ...TICKER_WORDS, ...TICKER_WORDS].map(
@@ -95,13 +108,12 @@ export default function Board() {
       {/* FILTER BAR */}
       <div
         className="sticky top-0 z-20 backdrop-blur border-b-2"
-        style={{ background: "rgba(20,17,13,0.9)", borderColor: "var(--ink-soft)" }}
+        style={{ background: "var(--overlay)", borderColor: "var(--border-soft)" }}
       >
         <div className="max-w-6xl mx-auto px-5 sm:px-8 py-3 flex gap-2 overflow-x-auto">
           <FilterChip
             active={activeRole === "all"}
             label="Everything"
-            color="var(--paper)"
             onClick={() => setActiveRole("all")}
           />
           {ROLES.map((r) => (
@@ -109,7 +121,6 @@ export default function Board() {
               key={r.key}
               active={activeRole === r.key}
               label={r.label}
-              color="var(--yellow)"
               onClick={() => setActiveRole(r.key)}
             />
           ))}
@@ -117,50 +128,70 @@ export default function Board() {
       </div>
 
       {/* BODY */}
-      <div className="max-w-6xl mx-auto px-5 sm:px-8 py-10 sm:py-14 flex flex-col gap-10">
-        <GradTraineeStrip />
+      <div className="max-w-6xl mx-auto px-5 sm:px-8 py-10 sm:py-14 flex flex-col gap-12">
+        <DirectPullSection pulls={directPulls} />
 
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <h2 className="font-display uppercase text-2xl sm:text-3xl tracking-wide">
-            The Dream List
-          </h2>
-          {generatedAt && (
-            <p className="font-mono-ui text-[11px] opacity-50">
-              last refreshed{" "}
-              {new Date(generatedAt).toLocaleTimeString("en-GB", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
+        <div>
+          <div className="flex items-center justify-between flex-wrap gap-2 mb-5">
+            <h2 className="font-display uppercase text-2xl sm:text-3xl tracking-wide">
+              Live From Jobberman
+            </h2>
+            {generatedAt && (
+              <p className="font-mono-ui text-[11px]" style={{ color: "var(--text-faint)" }}>
+                last refreshed{" "}
+                {new Date(generatedAt).toLocaleTimeString("en-GB", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </p>
+            )}
+          </div>
+
+          {loading ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="rounded-2xl h-40 animate-pulse"
+                  style={{ background: "var(--bg-soft)" }}
+                />
+              ))}
+            </div>
+          ) : feedStatus === "error" ? (
+            <p className="text-sm" style={{ color: "var(--text-faint)" }}>
+              Couldn&rsquo;t reach Jobberman just now — refresh the page to
+              try again.
             </p>
+          ) : postings.length === 0 ? (
+            <p className="text-sm" style={{ color: "var(--text-faint)" }}>
+              Nothing matching this filter in Lagos right now. Roles turn
+              over fast here — check back soon, or try{" "}
+              <button
+                onClick={() => setActiveRole("all")}
+                className="underline font-semibold"
+                style={{ color: "var(--yellow)" }}
+              >
+                Everything
+              </button>
+              .
+            </p>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {postings.map((p, i) => (
+                <JobCard key={p.url + i} posting={p} />
+              ))}
+            </div>
           )}
         </div>
-
-        {loading ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div
-                key={i}
-                className="rounded-2xl h-56 animate-pulse"
-                style={{ background: "var(--ink-soft)" }}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {results.map((r) => (
-              <CompanyCard key={r.id} result={r} />
-            ))}
-          </div>
-        )}
       </div>
 
-      <footer className="border-t-2 mt-10" style={{ borderColor: "var(--ink-soft)" }}>
+      <footer className="border-t-2 mt-10" style={{ borderColor: "var(--border-soft)" }}>
         <div className="max-w-6xl mx-auto px-5 sm:px-8 py-8 flex flex-col sm:flex-row justify-between gap-3">
-          <p className="font-mono-ui text-[11px] opacity-50">
-            Built for Sisi. Company boards that support live pulls refresh on
-            every visit; the rest link straight to a pre-filtered search.
+          <p className="font-mono-ui text-[11px]" style={{ color: "var(--text-faint)" }}>
+            Built for Sisi. Every listing here is a real, currently-open
+            role — nothing on this page is a search link.
           </p>
-          <p className="font-mono-ui text-[11px] opacity-50">
+          <p className="font-mono-ui text-[11px]" style={{ color: "var(--text-faint)" }}>
             GO GET IT ✦
           </p>
         </div>
@@ -172,12 +203,10 @@ export default function Board() {
 function FilterChip({
   active,
   label,
-  color,
   onClick,
 }: {
   active: boolean;
   label: string;
-  color: string;
   onClick: () => void;
 }) {
   return (
@@ -186,8 +215,8 @@ function FilterChip({
       className="font-mono-ui text-xs sm:text-sm font-bold tracking-wide px-4 py-2 rounded-full border-2 whitespace-nowrap transition-colors"
       style={
         active
-          ? { background: color, color: "var(--ink)", borderColor: color }
-          : { background: "transparent", color: "var(--paper)", borderColor: "var(--ink-soft)" }
+          ? { background: "var(--yellow)", color: "#14110d", borderColor: "var(--yellow)" }
+          : { background: "transparent", color: "var(--text)", borderColor: "var(--border-soft)" }
       }
       aria-pressed={active}
     >

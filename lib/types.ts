@@ -1,22 +1,26 @@
 export interface Posting {
   title: string;
   url: string;
+  company?: string;
   location?: string;
   postedAt?: string;
+  source: "Jobberman" | "Forward by Anakle" | "Kuda";
 }
 
-export interface CompanyResult {
+export interface DirectPullResult {
   id: string;
   name: string;
   blurb: string;
   color: string;
   careersUrl: string;
-  status: "live" | "search-only" | "empty" | "error";
+  status: "live" | "empty" | "error";
   postings: Posting[];
-  searchLinks: {
-    linkedin: string;
-    google?: string;
-    jobberman: string;
-  };
-  checkedAt: string;
+}
+
+export interface FeedResponse {
+  role: string | null;
+  generatedAt: string;
+  feedStatus: "live" | "error";
+  postings: Posting[];
+  directPulls: DirectPullResult[];
 }
