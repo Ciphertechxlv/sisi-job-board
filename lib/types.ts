@@ -4,7 +4,9 @@ export interface Posting {
   company?: string;
   location?: string;
   postedAt?: string;
-  source: "Jobberman" | "Forward by Anakle" | "Kuda";
+  source: "Jobberman" | "MyJobMag" | "Fuzu" | "Forward by Anakle" | "Kuda";
+  /** shown as a small note on the card, e.g. Fuzu's account-required apply flow */
+  caveat?: string;
 }
 
 export interface DirectPullResult {

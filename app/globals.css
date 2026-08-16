@@ -81,6 +81,109 @@ body {
   }
 }
 
+/* Easter egg hints — deliberately subtle, just enough to reward noticing */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes softPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.vol-badge-hint {
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.vol-badge-hint:hover {
+  transform: translateY(-1px) scale(1.03);
+}
+
+.footer-star-hint {
+  cursor: pointer;
+}
+.footer-star-hint span {
+  display: inline-block;
+  animation: softPulse 3.2s ease-in-out infinite;
+}
+.footer-star-hint:hover span {
+  animation: none;
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .footer-star-hint span {
+    animation: none;
+  }
+}
+
+@keyframes danfoDrive {
+  from {
+    left: -70px;
+  }
+  to {
+    left: 100%;
+  }
+}
+
+.danfo-drive {
+  animation: danfoDrive 4.5s linear forwards;
+}
+
+@keyframes toggleSpin {
+  0% {
+    transform: rotate(-90deg) scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: rotate(10deg) scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
+.theme-icon-enter {
+  animation: toggleSpin 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: center;
+}
+
+@keyframes twinkle {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.theme-twinkle {
+  animation: twinkle 0.6s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .danfo-drive,
+  .theme-icon-enter,
+  .theme-twinkle {
+    animation: none !important;
+  }
+}
+
 ::selection {
   background: var(--yellow);
   color: #14110d;

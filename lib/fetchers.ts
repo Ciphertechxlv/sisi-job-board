@@ -1,9 +1,9 @@
 import * as cheerio from "cheerio";
 import {
-  ALL_JOBBERMAN_SOURCES,
   DIRECT_SOURCES,
   DirectSource,
-  JOBBERMAN_ROLE_SOURCES,
+  FEED_SOURCES,
+  FeedSource,
   ROLES,
   RoleKey,
 } from "./companies";
@@ -127,66 +127,105 @@ export async function resolveDirectPulls(
 }
 
 // ---------------------------------------------------------------------
-// The Jobberman live feed — the primary source
+// The live feed — a generalized scraper shared across Jobberman, MyJobMag
+// and Fuzu. All three render their listing pages as plain server HTML with
+// a consistent shape: an anchor to the individual posting, sitting inside a
+// card that also holds the company name and a recognizable location word.
+// Rather than hard-code CSS classes (which break the moment any of these
+// sites redesigns), this walks the DOM looking for that shape directly.
 // ---------------------------------------------------------------------
 
 const LOCATION_WORDS =
   /(Lagos|Abuja|Remote \(Work From Home\)|Port Harcourt & Rivers State|Rest of Nigeria|Nigeria)/;
 
-async function fetchJobbermanPage(url: string): Promise<Posting[]> {
+async function fetchSourcePage(
+  url: string,
+  source: FeedSource
+): Promise<Posting[]> {
   const res = await fetchWithTimeout(url);
-  if (!res.ok) throw new Error(`Jobberman ${res.status}`);
+  if (!res.ok) throw new Error(`${source.label} ${res.status}`);
   const html = await res.text();
   const $ = cheerio.load(html);
   const postings: Posting[] = [];
   const seen = new Set<string>();
 
-  $('a[href*="/listings/"]').each((_, el) => {
+  const isJobLink = (href: string | undefined) =>
+    !!href && source.linkPattern.test(href);
+
+  $("a").each((_, el) => {
     const $a = $(el);
-    const title = ($a.attr("title") || $a.text()).trim();
     const href = $a.attr("href");
-    if (!href || !title || title.length < 3) return;
-    if (seen.has(href)) return;
-    seen.add(href);
+    if (!isJobLink(href)) return;
 
-    const url = href.startsWith("http")
-      ? href
-      : `https://www.jobberman.com${href}`;
+    let title = ($a.attr("title") || $a.text()).trim();
+    if (!title || title.length < 3) return;
+    if (source.cleanTitle) title = source.cleanTitle(title);
+    if (!title || seen.has(href!)) return;
+    seen.add(href!);
 
-    // Walk up the DOM looking for the smallest ancestor that (a) contains
+    const fullUrl = href!.startsWith("http") ? href! : `${source.baseUrl}${href}`;
+
+    // Walk up the DOM looking for the smallest ancestor that contains
     // exactly one job-listing link (this one — so we haven't bled into a
-    // sibling card) and (b) contains a recognizable location word. That's
-    // our card boundary. If we never find one, we still keep the posting —
-    // just without company/location — rather than risk grabbing text from
-    // the next card over.
+    // sibling card) and a recognizable location word. That's our card
+    // boundary. If we never find one, we still keep the posting — just
+    // without company/location — rather than risk grabbing text from the
+    // next card over.
     let node = $a.parent();
     let hops = 0;
     let company: string | undefined;
     let location: string | undefined;
 
     while (hops < 8 && node.length) {
-      const linkCount = node.find('a[href*="/listings/"]').length;
-      if (linkCount > 1) break; // already bled into a neighboring card — stop
+      const linkCount = node.find("a").filter((_, a2) => isJobLink($(a2).attr("href"))).length;
+      if (linkCount > 1) break;
       const text = node.text().replace(/\s+/g, " ").trim();
       const locMatch = text.match(LOCATION_WORDS);
       if (linkCount === 1 && locMatch && text.length > title.length + 10) {
-        const rest = text.startsWith(title) ? text.slice(title.length).trim() : text;
-        const restLocMatch = rest.match(LOCATION_WORDS);
-        if (restLocMatch && restLocMatch.index !== undefined) {
-          const candidate = rest
-            .slice(0, restLocMatch.index)
+        // The title's raw DOM text may differ slightly from our (possibly
+        // cleaned) `title` var, so locate it within the container text
+        // rather than assuming it's a prefix — company can legitimately
+        // sit either before the title (Fuzu) or after it (Jobberman,
+        // MyJobMag), and we don't want to concatenate the wrong one in.
+        const titleIdx = text.indexOf(title);
+        const before = titleIdx > 0 ? text.slice(0, titleIdx).trim() : "";
+        const afterFull =
+          titleIdx >= 0 ? text.slice(titleIdx + title.length).trim() : text;
+        const afterLocMatch = afterFull.match(LOCATION_WORDS);
+
+        if (afterLocMatch && afterLocMatch.index !== undefined) {
+          location = afterLocMatch[0];
+          const afterCandidate = afterFull
+            .slice(0, afterLocMatch.index)
             .trim()
             .replace(/^[-–|]\s*/, "");
-          if (candidate.length > 0 && candidate.length < 70) company = candidate;
+          if (afterCandidate.length > 1 && afterCandidate.length < 70) {
+            company = afterCandidate
+              .replace(/^(at|by)\s+/i, "")
+              .replace(/\s+\d{1,2}\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*$/i, "")
+              .trim();
+            if (company.length === 0) company = undefined;
+          } else if (before.length > 1 && before.length < 70) {
+            company = before;
+          }
+        } else {
+          location = locMatch[0];
+          if (before.length > 1 && before.length < 70) company = before;
         }
-        location = locMatch[0];
         break;
       }
       node = node.parent();
       hops++;
     }
 
-    postings.push({ title, url, company, location, source: "Jobberman" });
+    postings.push({
+      title,
+      url: fullUrl,
+      company,
+      location,
+      source: source.label as Posting["source"],
+      caveat: source.caveat,
+    });
   });
 
   return postings;
@@ -196,9 +235,20 @@ export async function resolveRoleFeed(
   roleKey: RoleKey | null
 ): Promise<{ postings: Posting[]; status: "live" | "error" }> {
   const role = ROLES.find((r) => r.key === roleKey);
-  const urls = role ? JOBBERMAN_ROLE_SOURCES[role.key] : ALL_JOBBERMAN_SOURCES;
 
-  const settled = await Promise.allSettled(urls.map(fetchJobbermanPage));
+  const jobs: { url: string; source: FeedSource }[] = role
+    ? FEED_SOURCES.flatMap((source) =>
+        source.roleSources[role.key].map((url) => ({ url, source }))
+      )
+    : FEED_SOURCES.flatMap((source) =>
+        Array.from(new Set(Object.values(source.roleSources).flat())).map(
+          (url) => ({ url, source })
+        )
+      );
+
+  const settled = await Promise.allSettled(
+    jobs.map((j) => fetchSourcePage(j.url, j.source))
+  );
   const ok = settled.filter(
     (s): s is PromiseFulfilledResult<Posting[]> => s.status === "fulfilled"
   );
@@ -216,13 +266,14 @@ export async function resolveRoleFeed(
 
   let postings = Array.from(merged.values());
 
-  // Graduate trainee is already scoped by Jobberman's own experience filter;
-  // everything else needs a keyword pass against the broader category feed.
+  // Graduate trainee is already scoped by each source's own experience
+  // filter; everything else needs a keyword pass against the broader
+  // category feed.
   if (role && role.keywords.length > 0) {
     postings = postings.filter((p) =>
       matchesKeywords(`${p.title} ${p.company ?? ""}`, role.keywords)
     );
   }
 
-  return { postings: postings.slice(0, 60), status: "live" };
+  return { postings: postings.slice(0, 90), status: "live" };
 }

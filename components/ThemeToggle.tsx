@@ -1,17 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Theme = "light" | "dark";
 
 export default function ThemeToggle() {
   const [theme, setTheme] = useState<Theme | null>(null);
+  const [justToggled, setJustToggled] = useState(false);
+  const twinkleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const current =
       (document.documentElement.getAttribute("data-theme") as Theme) || "dark";
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reading the theme the no-flash inline script already set on <html>, not a derived-state loop
     setTheme(current);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (twinkleTimer.current) clearTimeout(twinkleTimer.current);
+    };
   }, []);
 
   function toggle() {
@@ -23,6 +31,10 @@ export default function ThemeToggle() {
     } catch {
       // localStorage unavailable — theme just won't persist, no big deal
     }
+
+    setJustToggled(true);
+    if (twinkleTimer.current) clearTimeout(twinkleTimer.current);
+    twinkleTimer.current = setTimeout(() => setJustToggled(false), 650);
   }
 
   // avoid a hydration mismatch flash: render a neutral placeholder until mounted
@@ -34,18 +46,35 @@ export default function ThemeToggle() {
     <button
       onClick={toggle}
       aria-label={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
-      className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 flex items-center justify-center transition-transform hover:-translate-y-0.5 shrink-0"
+      className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 flex items-center justify-center transition-transform hover:-translate-y-0.5 shrink-0 overflow-visible"
       style={{ borderColor: "var(--yellow)" }}
     >
+      {justToggled && (
+        <>
+          <span
+            className="theme-twinkle absolute -top-1 -right-0.5 text-[10px] pointer-events-none"
+            style={{ color: "var(--yellow)" }}
+          >
+            ✦
+          </span>
+          <span
+            className="theme-twinkle absolute -bottom-1 -left-1 text-[8px] pointer-events-none"
+            style={{ color: "var(--coral)", animationDelay: "0.1s" }}
+          >
+            ✦
+          </span>
+        </>
+      )}
+
       {theme === "light" ? (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <svg key="light" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden className="theme-icon-enter">
           <path
             d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"
             fill="var(--text)"
           />
         </svg>
       ) : (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <svg key="dark" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden className="theme-icon-enter">
           <circle cx="12" cy="12" r="4.5" fill="var(--yellow)" />
           <g stroke="var(--yellow)" strokeWidth="1.8" strokeLinecap="round">
             <line x1="12" y1="1.5" x2="12" y2="4" />

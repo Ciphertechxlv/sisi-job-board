@@ -1,6 +1,7 @@
 "use client";
 
 import { DirectPullResult } from "@/lib/types";
+import { burstFrom } from "@/lib/confetti";
 
 export default function DirectPullSection({
   pulls,
@@ -50,6 +51,7 @@ export default function DirectPullSection({
                       href={p.url}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={(e) => burstFrom(e.currentTarget)}
                       className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:opacity-80"
                       style={{ background: "var(--bg-soft)" }}
                     >

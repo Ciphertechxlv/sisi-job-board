@@ -6,6 +6,13 @@ import { DirectPullResult, Posting } from "@/lib/types";
 import JobCard from "./JobCard";
 import DirectPullSection from "./DirectPullSection";
 import ThemeToggle from "./ThemeToggle";
+import VolBadge from "./VolBadge";
+import FooterEasterEgg from "./FooterEasterEgg";
+import NoteTrigger from "./NoteTrigger";
+import EndOfFeedNote from "./EndOfFeedNote";
+import DanfoBus from "./DanfoBus";
+import VisitCounter from "./VisitCounter";
+import { NOTES } from "@/lib/easterEggs";
 
 const TICKER_WORDS = ROLES.map((r) => r.label.toUpperCase());
 
@@ -16,6 +23,7 @@ export default function Board() {
   const [feedStatus, setFeedStatus] = useState<"live" | "error">("live");
   const [loading, setLoading] = useState(true);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
+  const [tickerPaused, setTickerPaused] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -53,26 +61,28 @@ export default function Board() {
       <header className="relative overflow-hidden border-b-4" style={{ borderColor: "var(--yellow)" }}>
         <div className="max-w-6xl mx-auto px-5 sm:px-8 pt-10 sm:pt-16 pb-8">
           <div className="flex items-center justify-between gap-4 mb-8 sm:mb-12">
-            <span
+            <NoteTrigger
+              note={NOTES.liveTag}
+              position="bottom-left"
+              accentColor="var(--green)"
               className="font-mono-ui text-[11px] sm:text-xs tracking-[0.2em]"
-              style={{ color: "var(--text-faint)" }}
             >
-              LAGOS, NIGERIA · LIVE
-            </span>
+              <span style={{ color: "var(--text-faint)" }}>LAGOS, NIGERIA · LIVE</span>
+            </NoteTrigger>
             <div className="flex items-center gap-3">
-              <span
-                className="font-mono-ui text-[11px] sm:text-xs tracking-[0.2em] px-3 py-1 rounded-full font-bold"
-                style={{ background: "var(--coral)", color: "#faf3e4" }}
-              >
-                VOL. 01
-              </span>
+              <VolBadge />
               <ThemeToggle />
             </div>
           </div>
 
-          <p className="font-mono-ui text-xs sm:text-sm tracking-[0.3em] mb-3" style={{ color: "var(--yellow)" }}>
-            SISI&rsquo;S
-          </p>
+          <NoteTrigger
+            note={NOTES.kicker}
+            position="side-right"
+            accentColor="var(--coral)"
+            className="font-mono-ui text-xs sm:text-sm tracking-[0.3em] mb-3 inline-block"
+          >
+            <span style={{ color: "var(--yellow)" }}>SISI&rsquo;S</span>
+          </NoteTrigger>
           <h1 className="font-display uppercase text-[15vw] sm:text-[9vw] lg:text-[110px] leading-[0.85] tracking-tight">
             Wanted
             <br />
@@ -81,9 +91,9 @@ export default function Board() {
           <p className="mt-6 max-w-[56ch] text-base sm:text-lg" style={{ color: "var(--text-soft)" }}>
             Real, open roles in brand marketing, advertising, creative
             writing, copywriting, digital marketing and graduate trainee
-            programmes — pulled live from Lagos&rsquo;s biggest job board and
-            straight from the hiring systems of the agencies and brands in
-            Sisi&rsquo;s dream list.
+            programmes — pulled live from three of Lagos&rsquo;s biggest job
+            boards and straight from the hiring systems of the agencies and
+            brands in Sisi&rsquo;s dream list.
           </p>
         </div>
 
@@ -92,7 +102,21 @@ export default function Board() {
           className="relative py-3 border-t-2 overflow-hidden"
           style={{ borderColor: "var(--yellow)", background: "var(--bg-soft)" }}
         >
-          <div className="marquee-track flex whitespace-nowrap font-mono-ui text-sm font-bold tracking-widest">
+          <NoteTrigger
+            note={NOTES.ticker}
+            position="bottom-center"
+            accentColor="var(--violet)"
+            stretch
+            onReveal={() => setTickerPaused(true)}
+            onDismiss={() => setTickerPaused(false)}
+          >
+            <span className="sr-only">Reveal a note</span>
+          </NoteTrigger>
+          <div
+            className="marquee-track flex whitespace-nowrap font-mono-ui text-sm font-bold tracking-widest pointer-events-none"
+            style={tickerPaused ? { animationPlayState: "paused" } : undefined}
+            aria-hidden
+          >
             {[...TICKER_WORDS, ...TICKER_WORDS, ...TICKER_WORDS, ...TICKER_WORDS].map(
               (w, i) => (
                 <span key={i} className="mx-4 flex items-center gap-4">
@@ -134,16 +158,23 @@ export default function Board() {
         <div>
           <div className="flex items-center justify-between flex-wrap gap-2 mb-5">
             <h2 className="font-display uppercase text-2xl sm:text-3xl tracking-wide">
-              Live From Jobberman
+              Live From Lagos Job Boards
             </h2>
             {generatedAt && (
-              <p className="font-mono-ui text-[11px]" style={{ color: "var(--text-faint)" }}>
-                last refreshed{" "}
-                {new Date(generatedAt).toLocaleTimeString("en-GB", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </p>
+              <NoteTrigger
+                note={NOTES.refreshed}
+                position="bottom-right"
+                accentColor="var(--violet)"
+                className="font-mono-ui text-[11px]"
+              >
+                <span style={{ color: "var(--text-faint)" }}>
+                  last refreshed{" "}
+                  {new Date(generatedAt).toLocaleTimeString("en-GB", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </NoteTrigger>
             )}
           </div>
 
@@ -159,8 +190,8 @@ export default function Board() {
             </div>
           ) : feedStatus === "error" ? (
             <p className="text-sm" style={{ color: "var(--text-faint)" }}>
-              Couldn&rsquo;t reach Jobberman just now — refresh the page to
-              try again.
+              Couldn&rsquo;t reach any of the job boards just now — refresh
+              the page to try again.
             </p>
           ) : postings.length === 0 ? (
             <p className="text-sm" style={{ color: "var(--text-faint)" }}>
@@ -182,18 +213,25 @@ export default function Board() {
               ))}
             </div>
           )}
+
+          {!loading && postings.length > 0 && <EndOfFeedNote />}
         </div>
       </div>
 
-      <footer className="border-t-2 mt-10" style={{ borderColor: "var(--border-soft)" }}>
-        <div className="max-w-6xl mx-auto px-5 sm:px-8 py-8 flex flex-col sm:flex-row justify-between gap-3">
-          <p className="font-mono-ui text-[11px]" style={{ color: "var(--text-faint)" }}>
-            Built for Sisi. Every listing here is a real, currently-open
-            role — nothing on this page is a search link.
-          </p>
-          <p className="font-mono-ui text-[11px]" style={{ color: "var(--text-faint)" }}>
-            GO GET IT ✦
-          </p>
+      <div className="mt-10">
+        <DanfoBus />
+      </div>
+
+      <footer className="border-t-2" style={{ borderColor: "var(--border-soft)" }}>
+        <div className="max-w-6xl mx-auto px-5 sm:px-8 py-8 flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row justify-between gap-3">
+            <p className="font-mono-ui text-[11px]" style={{ color: "var(--text-faint)" }}>
+              Built for Sisi. Every listing here is a real, currently-open
+              role — nothing on this page is a search link.
+            </p>
+            <FooterEasterEgg />
+          </div>
+          <VisitCounter />
         </div>
       </footer>
     </main>

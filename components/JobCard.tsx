@@ -1,9 +1,12 @@
 "use client";
 
 import { Posting } from "@/lib/types";
+import { burstFrom } from "@/lib/confetti";
 
 const SOURCE_COLOR: Record<Posting["source"], string> = {
   Jobberman: "var(--violet)",
+  MyJobMag: "var(--green)",
+  Fuzu: "var(--coral)",
   "Forward by Anakle": "var(--green)",
   Kuda: "var(--yellow)",
 };
@@ -14,6 +17,7 @@ export default function JobCard({ posting }: { posting: Posting }) {
       href={posting.url}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={(e) => burstFrom(e.currentTarget)}
       className="group relative flex flex-col gap-3 rounded-2xl p-5 border-2 transition-transform hover:-translate-y-1"
       style={{ background: "var(--bg-card)", borderColor: "var(--border-soft)" }}
     >
@@ -52,6 +56,12 @@ export default function JobCard({ posting }: { posting: Posting }) {
           APPLY ↗
         </span>
       </div>
+
+      {posting.caveat && (
+        <p className="font-mono-ui text-[10px] -mt-1" style={{ color: "var(--text-faint)" }}>
+          ⓘ {posting.caveat}
+        </p>
+      )}
     </a>
   );
 }
