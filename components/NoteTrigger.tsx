@@ -62,11 +62,14 @@ export default function NoteTrigger({
       {open && (
         <span
           role="status"
-          className={`absolute ${POSITION_CLASSES[position]} w-56 rounded-xl px-3 py-2.5 text-xs leading-snug shadow-lg border-2 z-30 inline-block text-left animate-[fadeIn_0.2s_ease]`}
+          className={`absolute ${POSITION_CLASSES[position]} w-56 rounded-xl px-3 py-2.5 text-xs leading-snug shadow-lg border-2 z-30 inline-block text-left normal-case animate-[fadeIn_0.2s_ease]`}
           style={{
             background: "var(--bg-card)",
             borderColor: accentColor,
             color: "var(--text)",
+            fontFamily: "var(--font-body)",
+            letterSpacing: "normal",
+            fontWeight: 400,
           }}
         >
           {note}

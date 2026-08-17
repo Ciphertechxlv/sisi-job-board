@@ -10,13 +10,10 @@ export default function DirectPullSection({
 }) {
   return (
     <section>
-      <div className="flex items-baseline justify-between flex-wrap gap-2 mb-4">
+      <div className="mb-4">
         <h2 className="font-display uppercase text-2xl sm:text-3xl tracking-wide">
           Straight From Their Boards
         </h2>
-        <p className="font-mono-ui text-[11px]" style={{ color: "var(--text-faint)" }}>
-          pulled live from their own hiring systems, no search engine involved
-        </p>
       </div>
 
       <div className="grid sm:grid-cols-2 gap-5">

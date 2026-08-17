@@ -7,7 +7,6 @@ import JobCard from "./JobCard";
 import DirectPullSection from "./DirectPullSection";
 import ThemeToggle from "./ThemeToggle";
 import VolBadge from "./VolBadge";
-import FooterEasterEgg from "./FooterEasterEgg";
 import NoteTrigger from "./NoteTrigger";
 import EndOfFeedNote from "./EndOfFeedNote";
 import DanfoBus from "./DanfoBus";
@@ -23,7 +22,6 @@ export default function Board() {
   const [feedStatus, setFeedStatus] = useState<"live" | "error">("live");
   const [loading, setLoading] = useState(true);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
-  const [tickerPaused, setTickerPaused] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -86,7 +84,17 @@ export default function Board() {
           <h1 className="font-display uppercase text-[15vw] sm:text-[9vw] lg:text-[110px] leading-[0.85] tracking-tight">
             Wanted
             <br />
-            Board
+            <span className="inline-flex items-start">
+              Board
+              <NoteTrigger
+                note={NOTES.ticker}
+                position="side-right"
+                accentColor="var(--violet)"
+                className="text-2xl sm:text-4xl lg:text-5xl leading-none ml-2 sm:ml-3 mt-1 sm:mt-3 align-top"
+              >
+                <span style={{ color: "var(--coral)" }}>✦</span>
+              </NoteTrigger>
+            </span>
           </h1>
           <p className="mt-6 max-w-[56ch] text-base sm:text-lg" style={{ color: "var(--text-soft)" }}>
             Real, open roles in brand marketing, advertising, creative
@@ -102,19 +110,8 @@ export default function Board() {
           className="relative py-3 border-t-2 overflow-hidden"
           style={{ borderColor: "var(--yellow)", background: "var(--bg-soft)" }}
         >
-          <NoteTrigger
-            note={NOTES.ticker}
-            position="bottom-center"
-            accentColor="var(--violet)"
-            stretch
-            onReveal={() => setTickerPaused(true)}
-            onDismiss={() => setTickerPaused(false)}
-          >
-            <span className="sr-only">Reveal a note</span>
-          </NoteTrigger>
           <div
-            className="marquee-track flex whitespace-nowrap font-mono-ui text-sm font-bold tracking-widest pointer-events-none"
-            style={tickerPaused ? { animationPlayState: "paused" } : undefined}
+            className="marquee-track flex whitespace-nowrap font-mono-ui text-sm font-bold tracking-widest"
             aria-hidden
           >
             {[...TICKER_WORDS, ...TICKER_WORDS, ...TICKER_WORDS, ...TICKER_WORDS].map(
@@ -223,14 +220,15 @@ export default function Board() {
       </div>
 
       <footer className="border-t-2" style={{ borderColor: "var(--border-soft)" }}>
-        <div className="max-w-6xl mx-auto px-5 sm:px-8 py-8 flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row justify-between gap-3">
-            <p className="font-mono-ui text-[11px]" style={{ color: "var(--text-faint)" }}>
-              Built for Sisi. Every listing here is a real, currently-open
-              role — nothing on this page is a search link.
-            </p>
-            <FooterEasterEgg />
-          </div>
+        <div className="max-w-6xl mx-auto px-5 sm:px-8 py-8 flex flex-col items-center gap-4">
+          <NoteTrigger
+            note={NOTES.signature}
+            position="top-right"
+            accentColor="var(--coral)"
+            className="font-mono-ui text-[11px]"
+          >
+            <span style={{ color: "var(--text-faint)" }}>Built for Sisi by Cipher</span>
+          </NoteTrigger>
           <VisitCounter />
         </div>
       </footer>

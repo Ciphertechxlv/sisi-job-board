@@ -52,25 +52,21 @@ design — no double or triple clicking, since this gets viewed on mobile too.
 
 | Spot | Trigger |
 |---|---|
-| "VOL." badge, top right | tap |
-| Footer's ✦ | tap |
+| "VOL." badge, top right | tap (badge stays "VOL. 01" — it doesn't count anything, it's just a trigger) |
+| "Built for Sisi by Cipher", footer | tap |
 | "SISI'S" kicker above the headline | tap |
-| The scrolling role ticker | tap anywhere on the bar |
+| The small ✦ next to "Board" in the headline | tap |
 | "LAGOS, NIGERIA · LIVE" tag | tap |
 | "last refreshed HH:MM" timestamp | tap |
 | End of the job feed | no tap needed — reveals itself as you scroll past |
-
-The ticker note is a special case: rather than a tiny star that's hard to
-hit while it's animating (especially with a finger on mobile), tapping
-*anywhere* on the ticker bar reveals it — and the scroll pauses for the few
-seconds the note is showing, then resumes.
 
 **The 3 animations:**
 
 - **Confetti on "Apply"** — a small, brand-colored burst from whichever job
   card you click (`lib/confetti.ts`). Respects `prefers-reduced-motion`.
-- **A little danfo bus** drives across a strip above the footer once you
-  scroll to the bottom (`components/DanfoBus.tsx`).
+- **A little danfo bus** drives across a strip above the footer every time
+  you scroll to the bottom — not just the first time
+  (`components/DanfoBus.tsx`).
 - **A small flourish on the theme toggle** — the icon spins in and two tiny
   stars twinkle every time you switch modes.
 

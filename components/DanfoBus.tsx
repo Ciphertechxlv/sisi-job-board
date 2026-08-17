@@ -14,10 +14,11 @@ export default function DanfoBus() {
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setDrive(true);
-          observer.disconnect();
-        }
+        // Toggle rather than disconnect: unmounting the svg when it scrolls
+        // out of view and remounting it when it scrolls back in restarts
+        // the CSS animation fresh each time, so the bus drives across
+        // every time you reach the bottom — not just the first time.
+        setDrive(entry.isIntersecting);
       },
       { threshold: 0.3 }
     );
