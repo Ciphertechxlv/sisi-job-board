@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { NOTES } from "@/lib/easterEggs";
+import NoteTrigger from "./NoteTrigger";
 
 export default function VisitCounter() {
   const [count, setCount] = useState<number | null>(null);
@@ -23,11 +25,15 @@ export default function VisitCounter() {
   if (count === null) return null;
 
   return (
-    <p
-      className="font-mono-ui text-[10px] tracking-widest text-center"
-      style={{ color: "var(--text-faint)" }}
-    >
-      {count.toLocaleString()} {count === 1 ? "READER" : "READERS"} TODAY
-    </p>
+    <div className="fixed bottom-4 right-4 z-40">
+      <NoteTrigger
+        note={NOTES.counter}
+        position="top-right"
+        accentColor="var(--coral)"
+        className="font-mono-ui text-[11px] font-bold tracking-widest px-3 py-1.5 rounded-full shadow-lg bg-[var(--yellow)] text-[#14110D]"
+      >
+        {count.toLocaleString()} {count === 1 ? "READER" : "READERS"} TODAY
+      </NoteTrigger>
+    </div>
   );
 }

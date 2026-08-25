@@ -19,4 +19,6 @@ export const NOTES = {
   refreshed: "refreshed for the hundredth time today. worth it.",
   /** auto-reveals once you scroll past the last job card — no tap needed */
   endOfFeed: "That's everything for now, you can rest today. There will be more tomorrow.",
+  /** the visit counter, bottom-right corner */
+  counter: "I see you.",
 } as const;

@@ -60,9 +60,38 @@ export const ROLES: { key: RoleKey; label: string; keywords: string[] }[] = [
   {
     key: "graduate-trainee",
     label: "Graduate Trainee",
-    keywords: [], // scoped entirely by Jobberman's own experience=graduate-trainee filter
+    // Used only against the "broad" sector category pages below (banking,
+    // logistics, supply chain) to isolate actual grad-trainee-level
+    // postings from senior roles mixed into those categories. The
+    // platform-pre-scoped URLs (experience=graduate-trainee, the combined
+    // internship-graduate page) are trusted as-is and never touch this
+    // filter — see `scoped` on SourceUrl below.
+    keywords: [
+      "graduate trainee",
+      "graduate programme",
+      "graduate program",
+      "management trainee",
+      "trainee programme",
+      "trainee program",
+      "graduate analyst",
+      "graduate associate",
+    ],
   },
 ];
+
+/**
+ * A single URL to pull from. `scoped: true` means the platform itself has
+ * already filtered this page down to the right experience level or
+ * category (e.g. Jobberman's own `experience=graduate-trainee` filter) —
+ * postings from these are trusted and shown regardless of title wording.
+ * `scoped: false` (the default) means this is a broad category page that
+ * mixes seniority levels, so the role's keyword filter is applied to its
+ * postings before they're shown.
+ */
+export interface SourceUrl {
+  url: string;
+  scoped?: boolean;
+}
 
 /**
  * Live feed sources. Each is a real, verified, server-rendered listing site
@@ -80,8 +109,11 @@ export interface FeedSource {
   cleanTitle?: (raw: string) => string;
   /** note shown next to results from this source, if anything is unusual */
   caveat?: string;
-  roleSources: Record<RoleKey, string[]>;
+  roleSources: Record<RoleKey, SourceUrl[]>;
 }
+
+const scoped = (url: string): SourceUrl => ({ url, scoped: true });
+const broad = (url: string): SourceUrl => ({ url, scoped: false });
 
 export const FEED_SOURCES: FeedSource[] = [
   {
@@ -91,28 +123,38 @@ export const FEED_SOURCES: FeedSource[] = [
     linkPattern: /\/listings\//,
     roleSources: {
       "brand-marketing": [
-        "https://www.jobberman.com/jobs/marketing-communications/lagos",
-        "https://www.jobberman.com/jobs/marketing-communications/lagos?page=2",
+        broad("https://www.jobberman.com/jobs/marketing-communications/lagos"),
+        broad("https://www.jobberman.com/jobs/marketing-communications/lagos?page=2"),
       ],
       advertising: [
-        "https://www.jobberman.com/jobs/advertising-media-communications/lagos",
-        "https://www.jobberman.com/jobs/marketing-communications/lagos",
+        broad("https://www.jobberman.com/jobs/advertising-media-communications/lagos"),
+        broad("https://www.jobberman.com/jobs/marketing-communications/lagos"),
       ],
       "creative-writing": [
-        "https://www.jobberman.com/jobs/creative-design/lagos",
-        "https://www.jobberman.com/jobs/creative-design/lagos?page=2",
+        broad("https://www.jobberman.com/jobs/creative-design/lagos"),
+        broad("https://www.jobberman.com/jobs/creative-design/lagos?page=2"),
       ],
       copywriting: [
-        "https://www.jobberman.com/jobs/creative-design/lagos",
-        "https://www.jobberman.com/jobs/marketing-communications/lagos",
+        broad("https://www.jobberman.com/jobs/creative-design/lagos"),
+        broad("https://www.jobberman.com/jobs/marketing-communications/lagos"),
       ],
       "digital-marketing": [
-        "https://www.jobberman.com/jobs/marketing-communications/lagos",
-        "https://www.jobberman.com/jobs/marketing-communications/lagos?page=2",
+        broad("https://www.jobberman.com/jobs/marketing-communications/lagos"),
+        broad("https://www.jobberman.com/jobs/marketing-communications/lagos?page=2"),
       ],
       "graduate-trainee": [
-        "https://www.jobberman.com/jobs/lagos?experience=graduate-trainee",
-        "https://www.jobberman.com/jobs/lagos?experience=graduate-trainee&page=2",
+        // Platform-pre-scoped — trusted as-is, no keyword filter needed.
+        scoped("https://www.jobberman.com/jobs/lagos?experience=graduate-trainee"),
+        scoped("https://www.jobberman.com/jobs/lagos?experience=graduate-trainee&page=2"),
+        scoped("https://www.jobberman.com/jobs/lagos/internship-graduate"),
+        // Broad sector pages — mix every seniority level, so these get
+        // keyword-filtered against ROLES["graduate-trainee"].keywords to
+        // isolate genuine grad-trainee postings from senior roles. This is
+        // what catches bank/FMCG/logistics/procurement graduate schemes
+        // that aren't tagged with Jobberman's own experience filter.
+        broad("https://www.jobberman.com/jobs/accounting-auditing-finance/lagos"),
+        broad("https://www.jobberman.com/jobs/shipping-logistics/lagos"),
+        broad("https://www.jobberman.com/jobs/supply-chain-procurement/lagos"),
       ],
     },
   },
@@ -124,16 +166,18 @@ export const FEED_SOURCES: FeedSource[] = [
     cleanTitle: (raw) => raw.replace(/\s+at\s+.+$/i, "").trim(),
     roleSources: {
       "brand-marketing": [
-        "https://www.myjobmag.com/cp/marketing-jobs-lagos",
-        "https://www.myjobmag.com/cp/brand-manager-jobs-lagos",
+        broad("https://www.myjobmag.com/cp/marketing-jobs-lagos"),
+        broad("https://www.myjobmag.com/cp/brand-manager-jobs-lagos"),
       ],
-      advertising: ["https://www.myjobmag.com/cp/media-jobs-lagos"],
-      "creative-writing": ["https://www.myjobmag.com/cp/media-jobs-lagos"],
-      copywriting: ["https://www.myjobmag.com/cp/media-jobs-lagos"],
+      advertising: [broad("https://www.myjobmag.com/cp/media-jobs-lagos")],
+      "creative-writing": [broad("https://www.myjobmag.com/cp/media-jobs-lagos")],
+      copywriting: [broad("https://www.myjobmag.com/cp/media-jobs-lagos")],
       "digital-marketing": [
-        "https://www.myjobmag.com/cp/digital-marketing-jobs-lagos",
+        broad("https://www.myjobmag.com/cp/digital-marketing-jobs-lagos"),
       ],
-      "graduate-trainee": ["https://www.myjobmag.com/cp/graduate-jobs-lagos"],
+      "graduate-trainee": [
+        scoped("https://www.myjobmag.com/cp/graduate-trainee-jobs-lagos"),
+      ],
     },
   },
   {
@@ -143,20 +187,15 @@ export const FEED_SOURCES: FeedSource[] = [
     linkPattern: /^\/nigeria\/jobs\//,
     caveat: "free Fuzu account needed to apply",
     roleSources: {
-      "brand-marketing": ["https://www.fuzu.com/nigeria/job/sales-marketing-promotion/lagos"],
-      advertising: ["https://www.fuzu.com/nigeria/job/sales-marketing-promotion/lagos"],
-      "creative-writing": ["https://www.fuzu.com/nigeria/job/media-communications-languages/lagos"],
-      copywriting: ["https://www.fuzu.com/nigeria/job/media-communications-languages/lagos"],
-      "digital-marketing": ["https://www.fuzu.com/nigeria/job/sales-marketing-promotion/lagos"],
+      "brand-marketing": [broad("https://www.fuzu.com/nigeria/job/sales-marketing-promotion/lagos")],
+      advertising: [broad("https://www.fuzu.com/nigeria/job/sales-marketing-promotion/lagos")],
+      "creative-writing": [broad("https://www.fuzu.com/nigeria/job/media-communications-languages/lagos")],
+      copywriting: [broad("https://www.fuzu.com/nigeria/job/media-communications-languages/lagos")],
+      "digital-marketing": [broad("https://www.fuzu.com/nigeria/job/sales-marketing-promotion/lagos")],
       "graduate-trainee": [],
     },
   },
 ];
-
-/** Union of every source URL across every source, for the "Everything" view. */
-export const ALL_FEED_URLS = Array.from(
-  new Set(FEED_SOURCES.flatMap((s) => Object.values(s.roleSources).flat()))
-);
 
 export interface DirectSource {
   id: string;

@@ -236,44 +236,59 @@ export async function resolveRoleFeed(
 ): Promise<{ postings: Posting[]; status: "live" | "error" }> {
   const role = ROLES.find((r) => r.key === roleKey);
 
-  const jobs: { url: string; source: FeedSource }[] = role
+  const jobs: { url: string; source: FeedSource; scoped: boolean }[] = role
     ? FEED_SOURCES.flatMap((source) =>
-        source.roleSources[role.key].map((url) => ({ url, source }))
+        source.roleSources[role.key].map((s) => ({
+          url: s.url,
+          source,
+          scoped: !!s.scoped,
+        }))
       )
-    : FEED_SOURCES.flatMap((source) =>
-        Array.from(new Set(Object.values(source.roleSources).flat())).map(
-          (url) => ({ url, source })
-        )
-      );
+    : FEED_SOURCES.flatMap((source) => {
+        const seen = new Set<string>();
+        return Object.values(source.roleSources)
+          .flat()
+          .filter((s) => {
+            if (seen.has(s.url)) return false;
+            seen.add(s.url);
+            return true;
+          })
+          .map((s) => ({ url: s.url, source, scoped: !!s.scoped }));
+      });
 
   const settled = await Promise.allSettled(
     jobs.map((j) => fetchSourcePage(j.url, j.source))
   );
-  const ok = settled.filter(
-    (s): s is PromiseFulfilledResult<Posting[]> => s.status === "fulfilled"
-  );
 
-  if (ok.length === 0) {
+  // Platform-pre-scoped results (e.g. Jobberman's own experience filter)
+  // are trusted and shown as-is. Broad category pages mix every seniority
+  // level, so only those get the role's keyword filter applied.
+  const trusted: Posting[] = [];
+  const untrusted: Posting[] = [];
+  let anyOk = false;
+
+  settled.forEach((result, i) => {
+    if (result.status !== "fulfilled") return;
+    anyOk = true;
+    const bucket = jobs[i].scoped ? trusted : untrusted;
+    bucket.push(...result.value);
+  });
+
+  if (!anyOk) {
     return { postings: [], status: "error" };
   }
 
+  const filteredUntrusted =
+    role && role.keywords.length > 0
+      ? untrusted.filter((p) =>
+          matchesKeywords(`${p.title} ${p.company ?? ""}`, role.keywords)
+        )
+      : untrusted;
+
   const merged = new Map<string, Posting>();
-  for (const r of ok) {
-    for (const p of r.value) {
-      if (!merged.has(p.url)) merged.set(p.url, p);
-    }
+  for (const p of [...trusted, ...filteredUntrusted]) {
+    if (!merged.has(p.url)) merged.set(p.url, p);
   }
 
-  let postings = Array.from(merged.values());
-
-  // Graduate trainee is already scoped by each source's own experience
-  // filter; everything else needs a keyword pass against the broader
-  // category feed.
-  if (role && role.keywords.length > 0) {
-    postings = postings.filter((p) =>
-      matchesKeywords(`${p.title} ${p.company ?? ""}`, role.keywords)
-    );
-  }
-
-  return { postings: postings.slice(0, 90), status: "live" };
+  return { postings: Array.from(merged.values()).slice(0, 90), status: "live" };
 }
