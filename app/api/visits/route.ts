@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getRedis } from "@/lib/redis";
 
 export const dynamic = "force-dynamic";
@@ -16,21 +16,31 @@ function todayKeyLagos(): string {
   return `sisi-wanted-board:visits:${ymd}`;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const redis = getRedis();
   if (!redis) {
     // Not configured yet — hide the counter rather than show a broken one.
     return NextResponse.json({ count: null });
   }
 
+  const shouldIncrement = req.nextUrl.searchParams.get("count") === "true";
+  const key = todayKeyLagos();
+
   try {
-    const key = todayKeyLagos();
-    const count = await redis.incr(key);
-    // Let old keys expire on their own instead of growing forever. 36h
-    // comfortably covers "the rest of today" no matter what time it is
-    // when this first runs, and by tomorrow a new key takes over anyway.
-    await redis.expire(key, 60 * 60 * 36);
-    return NextResponse.json({ count });
+    if (shouldIncrement) {
+      // First load of a new browser session — count it, once.
+      const count = await redis.incr(key);
+      // Let old keys expire on their own instead of growing forever. 36h
+      // comfortably covers "the rest of today" no matter what time it is
+      // when this first runs, and by tomorrow a new key takes over anyway.
+      await redis.expire(key, 60 * 60 * 36);
+      return NextResponse.json({ count });
+    }
+
+    // A refresh within the same session — just read today's count,
+    // don't increment it again.
+    const count = await redis.get<number>(key);
+    return NextResponse.json({ count: count ?? 0 });
   } catch {
     return NextResponse.json({ count: null });
   }

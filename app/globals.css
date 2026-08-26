@@ -206,3 +206,44 @@ button:focus-visible {
   background: var(--border-soft);
   border-radius: 999px;
 }
+
+/* Visit counter — a small tab peeking up from the bottom edge, flips
+   open (upward) when tapped to reveal the reader count */
+.counter-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 1.6rem;
+  border-radius: 0.6rem 0.6rem 0 0;
+  background: var(--yellow);
+  color: #14110d;
+  font-size: 0.9rem;
+  line-height: 1;
+  transform-origin: bottom center;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+  border: none;
+  cursor: pointer;
+}
+
+.counter-tab--flip {
+  animation: flipTabOpen 0.55s ease;
+}
+
+@keyframes flipTabOpen {
+  0% {
+    transform: rotateX(0deg);
+  }
+  40% {
+    transform: rotateX(-115deg);
+  }
+  100% {
+    transform: rotateX(0deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .counter-tab--flip {
+    animation: none;
+  }
+}
