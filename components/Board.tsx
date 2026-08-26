@@ -221,14 +221,27 @@ export default function Board() {
 
       <footer className="border-t-2" style={{ borderColor: "var(--border-soft)" }}>
         <div className="max-w-6xl mx-auto px-5 sm:px-8 py-8 flex flex-col items-center gap-4">
-          <NoteTrigger
-            note={NOTES.signature}
-            position="top-right"
-            accentColor="var(--coral)"
-            className="font-mono-ui text-[11px]"
-          >
-            <span style={{ color: "var(--text-faint)" }}>Built for Sisi by Cipher</span>
-          </NoteTrigger>
+          <p className="font-mono-ui text-[11px] flex items-center gap-1">
+            <NoteTrigger
+              note={NOTES.signature}
+              position="top-right"
+              accentColor="var(--coral)"
+              className="font-mono-ui text-[11px]"
+            >
+              <span style={{ color: "var(--text-faint)" }}>Built for Sisi by</span>
+            </NoteTrigger>
+            <a
+              href="https://www.linkedin.com/in/tumininu-akinola-a1a3a522b/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:underline transition-colors"
+              style={{ color: "var(--text-faint)" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--coral)")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-faint)")}
+            >
+              Cipher
+            </a>
+          </p>
           <VisitCounter />
         </div>
       </footer>
